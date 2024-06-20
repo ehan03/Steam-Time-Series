@@ -18,7 +18,7 @@ jobs:
                 python -m pip install --upgrade pip
                 pip install requests pandas
            
-            - name: Run results pipeline for most recent results
+            - name: Run pipeline for most recent results
               run: python src/ingest_data.py
         
             - name: Commit files and push changes
