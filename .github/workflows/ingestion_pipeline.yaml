@@ -3,7 +3,7 @@ name: Data Ingestion Pipeline
 on:
     workflow_dispatch:
     schedule:
-        - cron: "30 */12 * * *"
+        - cron: "45 */1 * * *"
 
 jobs:
     build:
