@@ -13,8 +13,7 @@ import requests
 
 def get_new_data() -> pd.DataFrame:
     url = "https://cdn.akamai.steamstatic.com/steam/publicstats/contentserver_bandwidth_stacked.jsonp"
-    # date_utc_today = datetime.now(timezone.utc).strftime("%m-%d-%Y")
-    v = "01-01-2000-01"
+    v = datetime.now(timezone.utc).strftime("%m-%d-%Y")
 
     response = requests.get(url, params={"v": v})
     startidx = response.text.find("(")
