@@ -22,13 +22,17 @@ def get_new_data() -> pd.DataFrame:
     date_tomorrow_utc = (datetime.now(timezone.utc) + timedelta(days=1)).strftime(
         "%m-%d-%Y"
     )
+    date_month_ago_utc = (datetime.now(timezone.utc) - timedelta(days=30)).strftime(
+        "%m-%d-%Y"
+    )
     v1 = f"{date_today_utc}-{hour_now_utc}"
     v2 = date_today_utc
     v3 = date_tomorrow_utc
+    v4 = date_month_ago_utc
 
     ua = UserAgent()
     url = "https://cdn.akamai.steamstatic.com/steam/publicstats/contentserver_bandwidth_stacked.jsonp"
-    candidates = [v1, v2, v3]
+    candidates = [v1, v2, v3, v4]
     newest_df = None
     most_recent_timestamp = None
     for v in candidates:
