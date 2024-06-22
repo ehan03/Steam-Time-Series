@@ -50,8 +50,8 @@ def merge_with_old(new_df: pd.DataFrame) -> None:
 
     end_timestamp_old = old_df["Timestamp"].max()
     start_timestamp_new = new_df["Timestamp"].min()
-    diff_minutes = (start_timestamp_new - end_timestamp_old).seconds // 60
-    assert diff_minutes > 10, "Data gap exists"
+    diff_minutes = (start_timestamp_new - end_timestamp_old).total_seconds() // 60
+    assert diff_minutes <= 10, "Data gap exists"
 
     new_df = new_df.loc[new_df["Timestamp"] > end_timestamp_old]
     df = pd.concat([old_df, new_df], axis=0, ignore_index=True, sort=False)
