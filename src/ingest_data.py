@@ -14,7 +14,9 @@ from fake_useragent import UserAgent
 
 def get_new_data() -> pd.DataFrame:
     url = "https://cdn.akamai.steamstatic.com/steam/publicstats/contentserver_bandwidth_stacked.jsonp"
-    v = datetime.now(timezone.utc).strftime("%m-%d-%Y")
+    date_today_utc = datetime.now(timezone.utc).strftime("%m-%d-%Y")
+    hour_now_utc = datetime.now(timezone.utc).strftime("%H")
+    v = f"{date_today_utc}-{hour_now_utc}"
     ua = UserAgent()
     headers = {"User-Agent": ua.random}
 
