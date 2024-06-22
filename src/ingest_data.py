@@ -7,6 +7,7 @@ from json import loads
 # third party imports
 import pandas as pd
 import requests
+from fake_useragent import UserAgent
 
 # local imports
 
@@ -14,8 +15,10 @@ import requests
 def get_new_data() -> pd.DataFrame:
     url = "https://cdn.akamai.steamstatic.com/steam/publicstats/contentserver_bandwidth_stacked.jsonp"
     v = datetime.now(timezone.utc).strftime("%m-%d-%Y")
+    ua = UserAgent()
+    headers = {"User-Agent": ua.random}
 
-    response = requests.get(url, params={"v": v})
+    response = requests.get(url, params={"v": v}, headers=headers)
     startidx = response.text.find("(")
     endidx = response.text.find(")")
     data = loads(response.text[startidx + 1 : endidx])
