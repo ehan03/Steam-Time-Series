@@ -1,6 +1,6 @@
 # standard library imports
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from functools import reduce
 from json import loads
 
@@ -13,29 +13,52 @@ from fake_useragent import UserAgent
 
 
 def get_new_data() -> pd.DataFrame:
-    url = "https://cdn.akamai.steamstatic.com/steam/publicstats/contentserver_bandwidth_stacked.jsonp"
-    v = datetime.now(timezone.utc).strftime("%m-%d-%Y")
+    """
+    Get newest bandwidth usage data from Steam
+    """
+
+    date_today_utc = datetime.now(timezone.utc).strftime("%m-%d-%Y")
+    hour_now_utc = datetime.now(timezone.utc).strftime("%H")
+    date_tomorrow_utc = (datetime.now(timezone.utc) + timedelta(days=1)).strftime(
+        "%m-%d-%Y"
+    )
+    v1 = f"{date_today_utc}-{hour_now_utc}"
+    v2 = date_today_utc
+    v3 = date_tomorrow_utc
+
     ua = UserAgent()
-    headers = {"User-Agent": ua.random}
+    url = "https://cdn.akamai.steamstatic.com/steam/publicstats/contentserver_bandwidth_stacked.jsonp"
+    candidates = [v1, v2, v3]
+    newest_df = None
+    most_recent_timestamp = None
+    for v in candidates:
+        headers = {"User-Agent": ua.random}
+        response = requests.get(url, params={"v": v}, headers=headers)
+        startidx = response.text.find("(")
+        endidx = response.text.find(")")
+        data = loads(response.text[startidx + 1 : endidx])
+        series_list = loads(data["json"])
 
-    response = requests.get(url, params={"v": v}, headers=headers)
-    startidx = response.text.find("(")
-    endidx = response.text.find(")")
-    data = loads(response.text[startidx + 1 : endidx])
-    series_list = loads(data["json"])
+        df_list = []
+        for series in series_list:
+            df_dict = {}
+            region = series["label"]
+            df_dict["Timestamp"] = [
+                pd.to_datetime(x[0], unit="ms") for x in series["data"]
+            ]
+            df_dict[region] = [int(x[1]) for x in series["data"]]
+            df_list.append(pd.DataFrame(df_dict))
 
-    df_list = []
-    for series in series_list:
-        df_dict = {}
-        region = series["label"]
-        df_dict["Timestamp"] = [pd.to_datetime(x[0], unit="ms") for x in series["data"]]
-        df_dict[region] = [int(x[1]) for x in series["data"]]
-        df_list.append(pd.DataFrame(df_dict))
+        df = reduce(lambda x, y: pd.merge(x, y, on="Timestamp", how="outer"), df_list)
+        df = df.sort_values("Timestamp").reset_index(drop=True)
+        last_timestamp = df["Timestamp"].max()
 
-    df = reduce(lambda x, y: pd.merge(x, y, on="Timestamp", how="outer"), df_list)
-    df = df.sort_values("Timestamp").reset_index(drop=True)
+        if most_recent_timestamp is None or last_timestamp > most_recent_timestamp:
+            most_recent_timestamp = last_timestamp
+            newest_df = df
+    assert newest_df is not None, "No data found"
 
-    return df
+    return newest_df
 
 
 def merge_with_old(new_df: pd.DataFrame) -> None:
