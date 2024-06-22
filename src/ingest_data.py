@@ -62,6 +62,10 @@ def get_new_data() -> pd.DataFrame:
 
 
 def merge_with_old(new_df: pd.DataFrame) -> None:
+    """
+    Merge new data with old data and save to disk
+    """
+
     path = os.path.join(os.path.dirname(__file__), "..", "data", "bandwidths.csv")
     if not os.path.exists(path):
         new_df.to_csv(path, index=False)
