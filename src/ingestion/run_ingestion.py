@@ -6,7 +6,7 @@
 from .ingestion_pipeline import IngestionPipeline
 
 
-def main():
+def main() -> None:
     """
     Main function to run ingestion pipeline
     """

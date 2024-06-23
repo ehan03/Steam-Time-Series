@@ -73,9 +73,12 @@ class IngestionPipeline:
             df = df.sort_values("Timestamp").reset_index(drop=True)
             last_timestamp = df["Timestamp"].max()
 
+            # Only keep the dataframe with the most recent timestamp
             if most_recent_timestamp is None or last_timestamp > most_recent_timestamp:
                 most_recent_timestamp = last_timestamp
                 newest_df = df
+
+        # Make sure that the data is not empty
         assert newest_df is not None, "No data found"
 
         return newest_df
@@ -89,7 +92,7 @@ class IngestionPipeline:
         url = "https://store.steampowered.com/stats/supportdata.json"
         headers = {"User-Agent": self.ua.random}
         params = {"l": "english", "global_cache_version": unix_timestamp_utc}
-        response = requests.get(url, headers=headers, params=params)
+        response = requests.get(url, params=params, headers=headers)
 
         series_list = response.json()
         df_list = []
@@ -114,13 +117,17 @@ class IngestionPipeline:
         Merge new data with old data and save to disk
         """
 
+        # Update bandwidth data
         old_bandwidth_df = pd.read_csv(
             BANDWIDTH_USE_DATA_PATH, parse_dates=["Timestamp"]
         )
         end_timestamp_bandwidth_old = old_bandwidth_df["Timestamp"].max()
         start_timestamp_bandwidth_new = new_bandwidth_df["Timestamp"].min()
         end_timestamp_bandwidth_new = new_bandwidth_df["Timestamp"].max()
+
         if end_timestamp_bandwidth_new > end_timestamp_bandwidth_old:
+            # Our data granularity is 10 minutes so we need consecutive data
+            # points to be at most 10 minutes apart
             diff_minutes = (
                 start_timestamp_bandwidth_new - end_timestamp_bandwidth_old
             ).total_seconds() // 60
@@ -134,15 +141,20 @@ class IngestionPipeline:
             )
             updated_bandwidth_df.to_csv(BANDWIDTH_USE_DATA_PATH, index=False)
 
+        # Update support data
         old_support_df = pd.read_csv(
             SUPPORT_REQUESTS_DATA_PATH, parse_dates=["Timestamp"]
         )
         end_timestamp_support_old = old_support_df["Timestamp"].max()
         start_timestamp_support_new = new_support_df["Timestamp"].min()
         end_timestamp_support_new = new_support_df["Timestamp"].max()
+
+        # For consistency, use data points when the UTC hour is 7
         if (end_timestamp_support_new > end_timestamp_support_old) and (
             end_timestamp_support_new.hour == 7
         ):
+            # Our data granularity is 1 day so we need consecutive data
+            # points to be at most 1 day apart
             diff_days = (start_timestamp_support_new - end_timestamp_support_old).days
             assert diff_days <= 1, "Data gap exists"
 
@@ -155,6 +167,10 @@ class IngestionPipeline:
             updated_support_df.to_csv(SUPPORT_REQUESTS_DATA_PATH, index=False)
 
     def run(self) -> None:
+        """
+        Run the ingestion pipeline
+        """
+
         bandwidth_df = self.__get_newest_bandwidth_data()
         support_df = self.__get_newest_support_data()
         self.__merge_with_old(bandwidth_df, support_df)
