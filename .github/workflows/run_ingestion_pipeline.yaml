@@ -19,7 +19,7 @@ jobs:
                 pip install requests pandas fake-useragent
            
             - name: Run pipeline for most recent results
-              run: python src/ingest_data.py
+              run: python -m  src.ingestion.run_ingestion
         
             - name: Commit files and push changes
               run: |
