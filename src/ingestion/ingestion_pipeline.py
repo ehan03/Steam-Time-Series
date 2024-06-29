@@ -18,7 +18,7 @@ class IngestionPipeline:
     support requests data from Steam
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize the IngestionPipeline object
         """
