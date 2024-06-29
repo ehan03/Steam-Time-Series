@@ -6,6 +6,6 @@ Data Sources:
 
 Some preliminary ideas:
 - Support requests look random af, so will probably just focus on bandwidth usage
-- Worth trying out a global forecasting model and then using hiearchical reconciliation to get good aggregate forecasts
+- Worth trying out a global forecasting model and then using hierarchical reconciliation to get good aggregate forecasts
 - Could also use a metric like MAGE (Mean Absolute aGgregate Error) and train individual region-level models to minimize this metric
-- Focus on 48 hour forecast horizons, don't have a whole lot of data yet
+- Focus on 48-hour forecast horizons, don't have a whole lot of data yet
