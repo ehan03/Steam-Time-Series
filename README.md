@@ -1,4 +1,4 @@
-# Steam-Bandwidth-Forecasting
+# Steam-Statistics-Forecasts
 
 Data Sources:
 - [Steam Download Stats](https://store.steampowered.com/stats/content/)

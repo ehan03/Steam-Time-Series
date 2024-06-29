@@ -1,10 +1,12 @@
 # standard library imports
 import os
+from typing import Tuple
 
 # third party imports
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+from plotly.graph_objects import Figure
 
 # local imports
 
@@ -51,7 +53,7 @@ def get_timestamp(file_path: str) -> float:
 
 # Smart data loading with caching
 @st.cache_data
-def load_data(file_path: str, timestamp: float, **kwargs):
+def load_data(file_path: str, timestamp: float, **kwargs) -> pd.DataFrame:
     data = pd.read_csv(file_path, **kwargs)
 
     return data
@@ -59,7 +61,9 @@ def load_data(file_path: str, timestamp: float, **kwargs):
 
 # Functions to plot data
 @st.cache_data
-def plot_bandwidth_usage_stacked_area(data: pd.DataFrame, timestamp: float):
+def plot_bandwidth_usage_stacked_area(
+    data: pd.DataFrame, timestamp: float
+) -> Tuple[Figure, pd.Timestamp]:
     latest_data = data["Timestamp"].max()
     data_melted = data.melt(
         id_vars=["Timestamp"],
@@ -97,11 +101,13 @@ def plot_bandwidth_usage_stacked_area(data: pd.DataFrame, timestamp: float):
         .update_layout(xaxis_title=None)
     )
 
-    return fig
+    return fig, latest_data
 
 
 @st.cache_data
-def plot_support_requests(data: pd.DataFrame, timestamp: float):
+def plot_support_requests(
+    data: pd.DataFrame, timestamp: float
+) -> Tuple[Figure, pd.Timestamp]:
     latest_data = data["Timestamp"].max()
     data_melted = data.melt(
         id_vars=["Timestamp"],
@@ -138,7 +144,7 @@ def plot_support_requests(data: pd.DataFrame, timestamp: float):
         .update_layout(xaxis_title=None)
     )
 
-    return fig
+    return fig, latest_data
 
 
 # Load data
@@ -193,24 +199,36 @@ with tab1:
     st.caption("Note: All times displayed are in UTC.")
 with tab2:
     # Create plots
-    bandwidths_stacked = plot_bandwidth_usage_stacked_area(
+    bandwidths_stacked, bandwidths_latest = plot_bandwidth_usage_stacked_area(
         data=bandwidths_df, timestamp=bandwidths_update_ts
     )
 
-    st.subheader("Week-Ahead Forecast")
-    st.write("Coming soon... 🚧👷‍♂️🚧")
+    st.subheader("48-Hour Forecast")
+    st.write("Coming soon 🚧👷‍♂️🚧")
 
     st.divider()
 
     st.subheader("Historical Download Bandwidth Usage")
+    st.caption(f"Latest data: {bandwidths_latest.strftime('%Y-%m-%d %H:%M:%S')} UTC")
     st.plotly_chart(bandwidths_stacked)
 with tab3:
     # Create plots
-    support_requests_line = plot_support_requests(
+    support_requests_line, support_requests_latest = plot_support_requests(
         data=support_requests_df, timestamp=support_requests_update_ts
     )
 
     st.subheader("Historical Support Requests")
+    st.caption(
+        f"Latest data: {support_requests_latest.strftime('%Y-%m-%d %H:%M:%S')} UTC"
+    )
     st.plotly_chart(support_requests_line)
 with tab4:
-    pass
+    st.markdown(
+        """
+        This project is a work in progress. 
+        
+        I'm still in the process of waiting for more data to accumulate
+        so that I can start prototyping some forecasting models. I'll update this section with my
+        methodology once I have something to show.
+        """
+    )
