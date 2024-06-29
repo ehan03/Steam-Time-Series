@@ -5,7 +5,6 @@ import os
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from streamlit_navigation_bar import st_navbar
 
 # local imports
 
