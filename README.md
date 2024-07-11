@@ -4,6 +4,8 @@ Data Sources:
 - [Steam Download Stats](https://store.steampowered.com/stats/content/)
 - [Steam Support Stats](https://store.steampowered.com/stats/support/)
 
+Currently just letting this project sit and collect more data
+
 Some preliminary ideas:
 - Support requests look random af, so will probably just focus on bandwidth usage
 - Worth trying out a global forecasting model and then using hierarchical reconciliation to get good aggregate forecasts
