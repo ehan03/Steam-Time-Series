@@ -13,7 +13,7 @@ from plotly.graph_objects import Figure
 
 # Set page config
 st.set_page_config(
-    page_title="Steam Forecasts", page_icon="📈", initial_sidebar_state="collapsed"
+    page_title="Steam Time Series", page_icon="📈", initial_sidebar_state="collapsed"
 )
 
 # Add page title
@@ -30,15 +30,14 @@ st.markdown(
     ),
     unsafe_allow_html=True,
 )
-st.title("🎮 Steam Forecasts 📈")
+st.title("🎮 Steam Time Series 📈")
 
 # Create the tabs
 spacing = "\u2001\u2001\u2001"
-tab1, tab2, tab3, tab4 = st.tabs(
+tab1, tab2, tab3 = st.tabs(
     [
         f"{spacing} Home {spacing}",
         f"{spacing} Bandwidth Usage {spacing}",
-        f"{spacing} Support Requests {spacing}",
         f"{spacing} About {spacing}",
     ]
 )
@@ -104,64 +103,13 @@ def plot_bandwidth_usage_stacked_area(
     return fig, latest_data
 
 
-@st.cache_data
-def plot_support_requests(
-    data: pd.DataFrame, timestamp: float
-) -> Tuple[Figure, pd.Timestamp]:
-    latest_data = data["Timestamp"].max()
-    data_melted = data.melt(
-        id_vars=["Timestamp"],
-        value_vars=data.columns.to_list()[1:],
-        var_name="Request Status",
-        value_name="Support Requests",
-    )
-    fig = (
-        px.line(
-            data_frame=data_melted,
-            x="Timestamp",
-            y="Support Requests",
-            color="Request Status",
-            labels={"Timestamp": "Date", "Support Requests": "Count"},
-            color_discrete_sequence=px.colors.qualitative.Plotly,
-        )
-        .update_xaxes(
-            range=[latest_data - pd.Timedelta(days=90), latest_data],
-            rangeslider_visible=True,
-            rangeselector=dict(
-                buttons=list(
-                    [
-                        dict(count=1, label="1m", step="month", stepmode="backward"),
-                        dict(count=3, label="3m", step="month", stepmode="backward"),
-                        dict(count=1, label="YTD", step="year", stepmode="todate"),
-                        dict(count=1, label="1yr", step="year", stepmode="backward"),
-                        dict(label="All", step="all"),
-                    ]
-                )
-            ),
-            rangeslider_thickness=0.075,
-        )
-        .update_yaxes(fixedrange=False)
-        .update_layout(xaxis_title=None)
-    )
-
-    return fig, latest_data
-
-
 # Load data
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 BANDWIDTHS_PATH = os.path.join(DATA_DIR, "bandwidths.csv")
-SUPPORT_REQUESTS_PATH = os.path.join(DATA_DIR, "support_requests.csv")
 
 bandwidths_update_ts = get_timestamp(file_path=BANDWIDTHS_PATH)
 bandwidths_df = load_data(
     file_path=BANDWIDTHS_PATH, timestamp=bandwidths_update_ts, parse_dates=["Timestamp"]
-)
-
-support_requests_update_ts = get_timestamp(file_path=SUPPORT_REQUESTS_PATH)
-support_requests_df = load_data(
-    file_path=SUPPORT_REQUESTS_PATH,
-    timestamp=support_requests_update_ts,
-    parse_dates=["Timestamp"],
 )
 
 # Populate tabs with content
@@ -180,12 +128,10 @@ with tab1:
 
         Welcome to Steam Forecasts!
 
-        Steam has some cool stats about [download bandwidth usage](https://store.steampowered.com/stats/content)
-        and [support requests](https://store.steampowered.com/stats/support/).
-        However, they only display the past 48 hours and 90 days, respectively,
-        with no way to easily access historical data. While sites like [SteamDB](https://steamdb.info/) do a great job
-        collecting and persisting other kinds of data from Steam such as player counts over time, the data I'm interested in
-        is not available there.
+        Steam has some cool stats about [download bandwidth usage](https://store.steampowered.com/stats/content).
+        However, they only display the past 48 hours, respectively, with no way to easily access historical data. 
+        While sites like [SteamDB](https://steamdb.info/) do a great job collecting and persisting other kinds of 
+        data from Steam such as player counts over time, the data I'm interested in is not available there.
 
         This project aims to fill that gap and more by fetching, storing, and visualizing historical data
         as well as providing forecasts for future bandwidth usage and (maybe) support requests.
@@ -212,17 +158,6 @@ with tab2:
     st.caption(f"Latest data: {bandwidths_latest.strftime('%Y-%m-%d %H:%M:%S')} UTC")
     st.plotly_chart(bandwidths_stacked)
 with tab3:
-    # Create plots
-    support_requests_line, support_requests_latest = plot_support_requests(
-        data=support_requests_df, timestamp=support_requests_update_ts
-    )
-
-    st.subheader("Historical Support Requests")
-    st.caption(
-        f"Latest data: {support_requests_latest.strftime('%Y-%m-%d %H:%M:%S')} UTC"
-    )
-    st.plotly_chart(support_requests_line)
-with tab4:
     st.markdown(
         """
         This project is a work in progress. 
