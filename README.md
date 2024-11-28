@@ -1,4 +1,4 @@
-# Steam-Statistics-Forecasts
+# Steam-Time-Series
 
 Data Sources:
 - [Steam Download Stats](https://store.steampowered.com/stats/content/)
