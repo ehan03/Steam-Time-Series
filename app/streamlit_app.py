@@ -33,12 +33,13 @@ st.markdown(
 st.title("🎮 Steam Time Series 📈")
 
 # Create the tabs
-spacing = "\u2001\u2001"
-tab1, tab2, tab3, tab4, tab5 = st.tabs(
+spacing = "\u2001"
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
     [
         f"{spacing} Home {spacing}",
         f"{spacing} Historical Total {spacing}",
         f"{spacing} Historical by Region {spacing}",
+        f"{spacing} Decomposition {spacing}",
         f"{spacing} Forecasts {spacing}",
         f"{spacing} About {spacing}",
     ]
@@ -68,10 +69,14 @@ def plot_bandwidth_usage_total_only(
 ) -> Tuple[Figure, pd.Timestamp]:
     latest_data = data["Timestamp"].max()
     fig = (
-        px.line(data_frame=data, x="Timestamp", y="Total")
+        px.line(
+            data_frame=data,
+            x="Timestamp",
+            y="Total",
+            labels={"Timestamp": "Date", "Bandwidth": "Bandwidth (Gbps)"},
+        )
         .update_xaxes(
             range=[latest_data - pd.Timedelta(days=7), latest_data],
-            rangeslider_visible=True,
             rangeselector=dict(
                 buttons=list(
                     [
@@ -79,14 +84,16 @@ def plot_bandwidth_usage_total_only(
                         dict(count=7, label="1w", step="day", stepmode="backward"),
                         dict(count=14, label="2w", step="day", stepmode="backward"),
                         dict(count=1, label="1m", step="month", stepmode="backward"),
+                        dict(count=3, label="3m", step="month", stepmode="backward"),
+                        dict(count=6, label="6m", step="month", stepmode="backward"),
+                        dict(count=1, label="1y", step="year", stepmode="backward"),
                         dict(label="All", step="all"),
                     ]
                 )
             ),
-            rangeslider_thickness=0.1,
         )
         .update_yaxes(fixedrange=False)
-        .update_layout(xaxis_title=None, yaxis_title="Bandwidth (Gbps)")
+        .update_layout(yaxis_title="Bandwidth (Gbps)")
     )
 
     return fig, latest_data
@@ -113,7 +120,6 @@ def plot_bandwidth_usage_stacked_area(data: pd.DataFrame, timestamp: float) -> F
         )
         .update_xaxes(
             range=[latest_data - pd.Timedelta(days=7), latest_data],
-            rangeslider_visible=True,
             rangeselector=dict(
                 buttons=list(
                     [
@@ -121,14 +127,15 @@ def plot_bandwidth_usage_stacked_area(data: pd.DataFrame, timestamp: float) -> F
                         dict(count=7, label="1w", step="day", stepmode="backward"),
                         dict(count=14, label="2w", step="day", stepmode="backward"),
                         dict(count=1, label="1m", step="month", stepmode="backward"),
+                        dict(count=3, label="3m", step="month", stepmode="backward"),
+                        dict(count=6, label="6m", step="month", stepmode="backward"),
+                        dict(count=1, label="1y", step="year", stepmode="backward"),
                         dict(label="All", step="all"),
                     ]
                 )
             ),
-            rangeslider_thickness=0.1,
         )
         .update_yaxes(fixedrange=False)
-        .update_layout(xaxis_title=None)
     )
 
     return fig
@@ -198,9 +205,12 @@ with tab3:
     pass
 
 with tab4:
-    st.write("Coming soon 🚧👷‍♂️🚧")
+    pass
 
 with tab5:
+    st.write("Coming soon 🚧👷‍♂️🚧")
+
+with tab6:
     st.markdown(
         """
         This project is a massive work in progress. 
