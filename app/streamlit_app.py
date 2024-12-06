@@ -33,11 +33,13 @@ st.markdown(
 st.title("🎮 Steam Time Series 📈")
 
 # Create the tabs
-spacing = "\u2001\u2001\u2001"
-tab1, tab2, tab3 = st.tabs(
+spacing = "\u2001\u2001"
+tab1, tab2, tab3, tab4, tab5 = st.tabs(
     [
         f"{spacing} Home {spacing}",
-        f"{spacing} Bandwidth Usage {spacing}",
+        f"{spacing} Historical Total {spacing}",
+        f"{spacing} Historical by Region {spacing}",
+        f"{spacing} Forecasts {spacing}",
         f"{spacing} About {spacing}",
     ]
 )
@@ -54,15 +56,44 @@ def get_timestamp(file_path: str) -> float:
 @st.cache_data
 def load_data(file_path: str, timestamp: float, **kwargs) -> pd.DataFrame:
     data = pd.read_csv(file_path, **kwargs)
+    data["Total"] = data.iloc[:, 1:].sum(axis=1)
 
     return data
 
 
 # Functions to plot data
 @st.cache_data
-def plot_bandwidth_usage_stacked_area(
+def plot_bandwidth_usage_total_only(
     data: pd.DataFrame, timestamp: float
 ) -> Tuple[Figure, pd.Timestamp]:
+    latest_data = data["Timestamp"].max()
+    fig = (
+        px.line(data_frame=data, x="Timestamp", y="Total")
+        .update_xaxes(
+            range=[latest_data - pd.Timedelta(days=7), latest_data],
+            rangeslider_visible=True,
+            rangeselector=dict(
+                buttons=list(
+                    [
+                        dict(count=48, label="48h", step="hour", stepmode="backward"),
+                        dict(count=7, label="1w", step="day", stepmode="backward"),
+                        dict(count=14, label="2w", step="day", stepmode="backward"),
+                        dict(count=1, label="1m", step="month", stepmode="backward"),
+                        dict(label="All", step="all"),
+                    ]
+                )
+            ),
+            rangeslider_thickness=0.1,
+        )
+        .update_yaxes(fixedrange=False)
+        .update_layout(xaxis_title=None, yaxis_title="Bandwidth (Gbps)")
+    )
+
+    return fig, latest_data
+
+
+@st.cache_data
+def plot_bandwidth_usage_stacked_area(data: pd.DataFrame, timestamp: float) -> Figure:
     latest_data = data["Timestamp"].max()
     data_melted = data.melt(
         id_vars=["Timestamp"],
@@ -94,13 +125,13 @@ def plot_bandwidth_usage_stacked_area(
                     ]
                 )
             ),
-            rangeslider_thickness=0.075,
+            rangeslider_thickness=0.1,
         )
         .update_yaxes(fixedrange=False)
         .update_layout(xaxis_title=None)
     )
 
-    return fig, latest_data
+    return fig
 
 
 # Load data
@@ -110,6 +141,14 @@ BANDWIDTHS_PATH = os.path.join(DATA_DIR, "bandwidths.csv")
 bandwidths_update_ts = get_timestamp(file_path=BANDWIDTHS_PATH)
 bandwidths_df = load_data(
     file_path=BANDWIDTHS_PATH, timestamp=bandwidths_update_ts, parse_dates=["Timestamp"]
+)
+
+# Get cached dataframes and visuals
+bandwidths_total_only, bandwidths_latest = plot_bandwidth_usage_total_only(
+    data=bandwidths_df, timestamp=bandwidths_update_ts
+)
+bandwidths_stacked = plot_bandwidth_usage_stacked_area(
+    data=bandwidths_df.drop(columns="Total"), timestamp=bandwidths_update_ts
 )
 
 # Populate tabs with content
@@ -134,7 +173,7 @@ with tab1:
         data from Steam such as player counts over time, the data I'm interested in is not available there.
 
         This project aims to fill that gap and more by fetching, storing, and visualizing historical data
-        as well as providing forecasts for future bandwidth usage and (maybe) support requests.
+        as well as providing forecasts for future bandwidth usage (WIP).
         Not only is this an interesting time series forecasting problem, but it also has the potential
         to provide valuable and practical insights to Steam users and developers.
 
@@ -142,28 +181,33 @@ with tab1:
         """,
         unsafe_allow_html=True,
     )
-    st.caption("Note: All times displayed are in UTC.")
-with tab2:
-    # Create plots
-    bandwidths_stacked, bandwidths_latest = plot_bandwidth_usage_stacked_area(
-        data=bandwidths_df, timestamp=bandwidths_update_ts
-    )
+    st.caption(f"Latest data: {bandwidths_latest.strftime('%Y-%m-%d %H:%M:%S')} UTC")
 
-    st.subheader("48-Hour Forecast")
-    st.write("Coming soon 🚧👷‍♂️🚧")
+with tab2:
+    st.markdown("##### Total Download Bandwidth Usage over Time (Total Only)")
+    st.plotly_chart(bandwidths_total_only)
 
     st.divider()
 
-    st.subheader("Historical Download Bandwidth Usage")
-    st.caption(f"Latest data: {bandwidths_latest.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+    st.markdown("##### Total Download Bandwidth Usage over Time (Stacked Area)")
     st.plotly_chart(bandwidths_stacked)
+
+    st.caption("Note: All times displayed are in UTC.")
+
 with tab3:
+    pass
+
+with tab4:
+    st.write("Coming soon 🚧👷‍♂️🚧")
+
+with tab5:
     st.markdown(
         """
-        This project is a work in progress. 
+        This project is a massive work in progress. 
         
         I'm still in the process of waiting for more data to accumulate
         so that I can start prototyping some forecasting models. I'll update this section with my
-        methodology once I have something to show.
+        methodology once I have something to show. Hierarchical reconciliation might be
+        an interesting and relevant direction.
         """
     )
