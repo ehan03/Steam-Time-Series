@@ -2,6 +2,7 @@
 from datetime import datetime, timedelta, timezone
 from functools import reduce
 from json import loads
+from typing import Optional
 
 # third party imports
 import pandas as pd
@@ -24,8 +25,19 @@ class IngestionPipeline:
         """
 
         self.ua = UserAgent()
+        self.regions_all = {
+            "Central America",
+            "Africa",
+            "Middle East",
+            "Oceania",
+            "South America",
+            "Russia",
+            "Asia",
+            "Europe",
+            "North America",
+        }
 
-    def __get_newest_bandwidth_data(self) -> pd.DataFrame:
+    def __get_newest_bandwidth_data(self) -> Optional[pd.DataFrame]:
         """
         Get newest download bandwidth usage data from Steam
         """
@@ -58,6 +70,7 @@ class IngestionPipeline:
             series_list = loads(data["json"])
 
             df_list = []
+            regions_seen = set()
             for series in series_list:
                 df_dict = {}
                 region = series["label"]
@@ -65,7 +78,12 @@ class IngestionPipeline:
                     pd.to_datetime(x[0], unit="ms") for x in series["data"]
                 ]
                 df_dict[region] = [int(x[1]) for x in series["data"]]
+                regions_seen.add(region)
                 df_list.append(pd.DataFrame(df_dict))
+
+            # Make sure that all regions are present
+            if regions_seen != self.regions_all:
+                continue
 
             df = reduce(
                 lambda x, y: pd.merge(x, y, on="Timestamp", how="outer"), df_list
@@ -77,9 +95,6 @@ class IngestionPipeline:
             if most_recent_timestamp is None or last_timestamp > most_recent_timestamp:
                 most_recent_timestamp = last_timestamp
                 newest_df = df
-
-        # Make sure that the data is not empty
-        assert newest_df is not None, "No data found"
 
         return newest_df
 
@@ -118,4 +133,8 @@ class IngestionPipeline:
         """
 
         bandwidth_df = self.__get_newest_bandwidth_data()
-        self.__merge_with_old(bandwidth_df)
+
+        if bandwidth_df is not None:
+            self.__merge_with_old(bandwidth_df)
+        else:
+            print("No new complete bandwidth data available")
