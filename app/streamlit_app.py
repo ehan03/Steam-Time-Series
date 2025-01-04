@@ -36,10 +36,10 @@ st.title("🎮 Steam Time Series 📈")
 spacing = "\u2001\u2001\u2001"
 tab1, tab2, tab3, tab4 = st.tabs(
     [
-        f"{spacing} Home {spacing}",
-        f"{spacing} Historical Data {spacing}",
-        f"{spacing} Forecasts {spacing}",
-        f"{spacing} About {spacing}",
+        f"{spacing}  Home  {spacing}",
+        f"{spacing}  Historical Data  {spacing}",
+        f"{spacing}  Forecasts  {spacing}",
+        f"{spacing}  About  {spacing}",
     ]
 )
 
