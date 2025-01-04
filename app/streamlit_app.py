@@ -33,13 +33,11 @@ st.markdown(
 st.title("🎮 Steam Time Series 📈")
 
 # Create the tabs
-spacing = "\u2001"
+spacing = "\u2001\u2001"
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
     [
         f"{spacing} Home {spacing}",
-        f"{spacing} Historical Total {spacing}",
-        f"{spacing} Historical by Region {spacing}",
-        f"{spacing} Decomposition {spacing}",
+        f"{spacing} Historical Data {spacing}",
         f"{spacing} Forecasts {spacing}",
         f"{spacing} About {spacing}",
     ]
@@ -202,15 +200,9 @@ with tab2:
     st.caption("Note: All times displayed are in UTC.")
 
 with tab3:
-    pass
-
-with tab4:
-    pass
-
-with tab5:
     st.write("Coming soon 🚧👷‍♂️🚧")
 
-with tab6:
+with tab4:
     st.markdown(
         """
         This project is a massive work in progress. 
