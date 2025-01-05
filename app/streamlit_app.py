@@ -54,7 +54,15 @@ def get_timestamp(file_path: str) -> float:
 # Smart data loading with caching
 @st.cache_data
 def load_data(file_path: str, timestamp: float, **kwargs) -> pd.DataFrame:
+    # Load data
     data = pd.read_csv(file_path, **kwargs)
+
+    # Subset the last year of data
+    data = data.loc[
+        data["Timestamp"] > (data["Timestamp"].max() - pd.Timedelta(days=365))
+    ]
+
+    # Add a total column
     data["Total"] = data.iloc[:, 1:].sum(axis=1)
 
     return data
@@ -85,7 +93,6 @@ def plot_bandwidth_usage_total_only(
                         dict(count=3, label="3m", step="month", stepmode="backward"),
                         dict(count=6, label="6m", step="month", stepmode="backward"),
                         dict(count=1, label="1y", step="year", stepmode="backward"),
-                        dict(label="All", step="all"),
                     ]
                 )
             ),
@@ -128,7 +135,6 @@ def plot_bandwidth_usage_stacked_area(data: pd.DataFrame, timestamp: float) -> F
                         dict(count=3, label="3m", step="month", stepmode="backward"),
                         dict(count=6, label="6m", step="month", stepmode="backward"),
                         dict(count=1, label="1y", step="year", stepmode="backward"),
-                        dict(label="All", step="all"),
                     ]
                 )
             ),
