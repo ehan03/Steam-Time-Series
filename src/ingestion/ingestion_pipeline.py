@@ -25,7 +25,7 @@ class IngestionPipeline:
         """
 
         self.ua = UserAgent()
-        self.regions_all = {
+        self.regions_all = [
             "Central America",
             "Africa",
             "Middle East",
@@ -35,7 +35,7 @@ class IngestionPipeline:
             "Asia",
             "Europe",
             "North America",
-        }
+        ]
 
     def __get_newest_bandwidth_data(self) -> Optional[pd.DataFrame]:
         """
@@ -70,6 +70,7 @@ class IngestionPipeline:
             series_list = loads(data["json"])
 
             df_list = []
+            regions_all_set = set(self.regions_all)
             regions_seen = set()
             for series in series_list:
                 df_dict = {}
@@ -82,7 +83,7 @@ class IngestionPipeline:
                 df_list.append(pd.DataFrame(df_dict))
 
             # Make sure that all regions are present
-            if regions_seen != self.regions_all:
+            if regions_seen != regions_all_set:
                 continue
 
             df = reduce(
@@ -125,6 +126,15 @@ class IngestionPipeline:
             updated_bandwidth_df = pd.concat(
                 [old_bandwidth_df, new_bandwidth_df], axis=0, ignore_index=True
             )
+            updated_bandwidth_df = (
+                updated_bandwidth_df.set_index("Timestamp")
+                .resample("10min")
+                .asfreq()
+                .reset_index()
+            )
+            updated_bandwidth_df[self.regions_all] = updated_bandwidth_df[
+                self.regions_all
+            ].astype("Int64")
             updated_bandwidth_df.to_csv(BANDWIDTH_USE_DATA_PATH, index=False)
 
     def run(self) -> None:
