@@ -113,13 +113,6 @@ class IngestionPipeline:
         end_timestamp_bandwidth_new = new_bandwidth_df["Timestamp"].max()
 
         if end_timestamp_bandwidth_new > end_timestamp_bandwidth_old:
-            # Our data granularity is 10 minutes so we need consecutive data
-            # points to be at most 10 minutes apart
-            diff_minutes = (
-                start_timestamp_bandwidth_new - end_timestamp_bandwidth_old
-            ).total_seconds() // 60
-            assert diff_minutes <= 10, "Data gap exists"
-
             new_bandwidth_df = new_bandwidth_df.loc[
                 new_bandwidth_df["Timestamp"] > end_timestamp_bandwidth_old
             ]
