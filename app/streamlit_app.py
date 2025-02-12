@@ -179,7 +179,7 @@ with tab1:
         Welcome to Steam Forecasts!
 
         Steam has some cool stats about [download bandwidth usage](https://store.steampowered.com/stats/content).
-        However, they only display the past 48 hours, respectively, with no way to easily access historical data. 
+        However, they only display the past 48 hours with no way to easily access historical data. 
         While sites like [SteamDB](https://steamdb.info/) do a great job collecting and persisting other kinds of 
         data from Steam such as player counts over time, the data I'm interested in is not available there.
 
