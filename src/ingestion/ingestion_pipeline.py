@@ -109,7 +109,6 @@ class IngestionPipeline:
             BANDWIDTH_USE_DATA_PATH, parse_dates=["Timestamp"]
         )
         end_timestamp_bandwidth_old = old_bandwidth_df["Timestamp"].max()
-        start_timestamp_bandwidth_new = new_bandwidth_df["Timestamp"].min()
         end_timestamp_bandwidth_new = new_bandwidth_df["Timestamp"].max()
 
         if end_timestamp_bandwidth_new > end_timestamp_bandwidth_old:
