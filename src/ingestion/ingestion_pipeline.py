@@ -2,7 +2,6 @@
 from datetime import datetime, timedelta, timezone
 from functools import reduce
 from json import loads
-from typing import Optional
 
 # third party imports
 import pandas as pd
@@ -37,7 +36,7 @@ class IngestionPipeline:
             "North America",
         ]
 
-    def __get_newest_bandwidth_data(self) -> Optional[pd.DataFrame]:
+    def __get_newest_bandwidth_data(self) -> pd.DataFrame | None:
         """
         Get newest download bandwidth usage data from Steam
         """
@@ -115,18 +114,17 @@ class IngestionPipeline:
             new_bandwidth_df = new_bandwidth_df.loc[
                 new_bandwidth_df["Timestamp"] > end_timestamp_bandwidth_old
             ]
-            updated_bandwidth_df = pd.concat(
-                [old_bandwidth_df, new_bandwidth_df], axis=0, ignore_index=True
-            )
             updated_bandwidth_df = (
-                updated_bandwidth_df.set_index("Timestamp")
-                .resample("10min")
-                .asfreq()
-                .reset_index()
+                pd.concat(
+                    [old_bandwidth_df, new_bandwidth_df], axis=0, ignore_index=True
+                )
+                .sort_values("Timestamp")
+                .reset_index(drop=True)
             )
             updated_bandwidth_df[self.regions_all] = updated_bandwidth_df[
                 self.regions_all
             ].astype("Int64")
+
             updated_bandwidth_df.to_csv(BANDWIDTH_USE_DATA_PATH, index=False)
 
     def run(self) -> None:
