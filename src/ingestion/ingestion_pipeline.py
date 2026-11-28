@@ -1,5 +1,5 @@
 # standard library imports
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from functools import reduce
 from json import loads
 
@@ -24,17 +24,6 @@ class IngestionPipeline:
         """
 
         self.ua = UserAgent()
-        self.regions_all = [
-            "Central America",
-            "Africa",
-            "Middle East",
-            "Oceania",
-            "South America",
-            "Russia",
-            "Asia",
-            "Europe",
-            "North America",
-        ]
 
     def __get_newest_bandwidth_data(self) -> pd.DataFrame | None:
         """
@@ -43,12 +32,10 @@ class IngestionPipeline:
 
         # Steam CDN is kind of cursed so the following is a workaround to get the
         # most recent data if available
-        date_today_utc = datetime.now(timezone.utc).strftime("%m-%d-%Y")
-        hour_now_utc = datetime.now(timezone.utc).strftime("%H")
-        date_tomorrow_utc = (datetime.now(timezone.utc) + timedelta(days=1)).strftime(
-            "%m-%d-%Y"
-        )
-        date_month_ago_utc = (datetime.now(timezone.utc) - timedelta(days=30)).strftime(
+        date_today_utc = datetime.now(UTC).strftime("%m-%d-%Y")
+        hour_now_utc = datetime.now(UTC).strftime("%H")
+        date_tomorrow_utc = (datetime.now(UTC) + timedelta(days=1)).strftime("%m-%d-%Y")
+        date_month_ago_utc = (datetime.now(UTC) - timedelta(days=30)).strftime(
             "%m-%d-%Y"
         )
         v1 = f"{date_today_utc}-{hour_now_utc}"
@@ -59,41 +46,43 @@ class IngestionPipeline:
         url = "https://cdn.akamai.steamstatic.com/steam/publicstats/contentserver_bandwidth_stacked.jsonp"
         candidates = [v1, v2, v3, v4]
         newest_df = None
-        most_recent_timestamp = None
+        newest_key = None
         for v in candidates:
             headers = {"User-Agent": self.ua.random}
             response = requests.get(url, params={"v": v}, headers=headers)
             startidx = response.text.find("(")
-            endidx = response.text.find(")")
+            endidx = response.text.rfind(")")
             data = loads(response.text[startidx + 1 : endidx])
             series_list = loads(data["json"])
 
+            # Take whatever regions Steam gives us, no fixed region list
             df_list = []
-            regions_all_set = set(self.regions_all)
-            regions_seen = set()
             for series in series_list:
-                df_dict = {}
                 region = series["label"]
-                df_dict["Timestamp"] = [
-                    pd.to_datetime(x[0], unit="ms") for x in series["data"]
-                ]
-                df_dict[region] = [int(x[1]) for x in series["data"]]
-                regions_seen.add(region)
-                df_list.append(pd.DataFrame(df_dict))
+                df_list.append(
+                    pd.DataFrame(
+                        {
+                            "Timestamp": [
+                                pd.to_datetime(x[0], unit="ms") for x in series["data"]
+                            ],
+                            region: [int(x[1]) for x in series["data"]],
+                        }
+                    )
+                )
 
-            # Make sure that all regions are present
-            if regions_seen != regions_all_set:
+            if not df_list:
                 continue
 
             df = reduce(
                 lambda x, y: pd.merge(x, y, on="Timestamp", how="outer"), df_list
             )
             df = df.sort_values("Timestamp").reset_index(drop=True)
-            last_timestamp = df["Timestamp"].max()
 
-            # Only keep the dataframe with the most recent timestamp
-            if most_recent_timestamp is None or last_timestamp > most_recent_timestamp:
-                most_recent_timestamp = last_timestamp
+            # Only keep the dataframe with the most recent timestamp (ties go to
+            # whichever response has more regions)
+            key = (df["Timestamp"].max(), len(df_list))
+            if newest_key is None or key > newest_key:
+                newest_key = key
                 newest_df = df
 
         return newest_df
@@ -114,6 +103,10 @@ class IngestionPipeline:
             new_bandwidth_df = new_bandwidth_df.loc[
                 new_bandwidth_df["Timestamp"] > end_timestamp_bandwidth_old
             ]
+
+            # concat keeps the old columns first and aligns by name. Regions that
+            # are missing from the new data (e.g. Russia) become NA, and any
+            # brand new regions get added as new columns.
             updated_bandwidth_df = (
                 pd.concat(
                     [old_bandwidth_df, new_bandwidth_df], axis=0, ignore_index=True
@@ -121,9 +114,10 @@ class IngestionPipeline:
                 .sort_values("Timestamp")
                 .reset_index(drop=True)
             )
-            updated_bandwidth_df[self.regions_all] = updated_bandwidth_df[
-                self.regions_all
-            ].astype("Int64")
+            value_cols = [c for c in updated_bandwidth_df.columns if c != "Timestamp"]
+            updated_bandwidth_df[value_cols] = updated_bandwidth_df[value_cols].astype(
+                "Int64"
+            )
 
             updated_bandwidth_df.to_csv(BANDWIDTH_USE_DATA_PATH, index=False)
 
